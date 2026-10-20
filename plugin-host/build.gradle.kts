@@ -14,4 +14,10 @@ application {
 
 tasks.test {
     useJUnitPlatform()
+    dependsOn(":plugin-matrix:jar")
+    systemProperty("matrixJar", rootProject.layout.projectDirectory.file("plugin-matrix/build/libs/plugin-matrix.jar").asFile.absolutePath)
+}
+
+tasks.named<JavaExec>("run") {
+    workingDir = rootProject.projectDir
 }
