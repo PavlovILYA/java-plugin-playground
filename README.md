@@ -5,7 +5,7 @@
 ## Модули и роли
 
 - `plugin-api` — общий контракт `AnimationPlugin`. Метод `renderFrame()` возвращает текст кадра заданного размера и не обращается к терминалу. Это SPI: хост определяет интерфейс, а разные реализации предоставляют поведение.
-- `plugin-host` — `Main` выбирает режим, `AnimationEngine` запрашивает кадры через `AnimationPlugin`, `TerminalRenderer` выводит их с помощью ANSI, `StarfieldPlugin` рисует встроенное звёздное поле. `ExternalPluginLoader` отвечает только за загрузку класса из JAR.
+- `plugin-host` — `LaunchOptions` разбирает CLI, `PluginSession` получает плагин и владеет его загрузчиком, а компактный `Main` соединяет их с `AnimationRunner`. Runner готовит диагностику и терминал, `AnimationEngine` запрашивает кадры через `AnimationPlugin`, `TerminalRenderer` выводит их с помощью ANSI. `StarfieldPlugin` рисует встроенное звёздное поле; `ExternalPluginLoader` по-прежнему отвечает только за загрузку класса из JAR.
 - `plugin-matrix` — самостоятельный `MatrixRainPlugin` с падающими столбцами символов. Он зависит от `plugin-api` через `compileOnly` и не зависит от хоста.
 
 ## Сборка и запуск
@@ -25,7 +25,9 @@
 
 ## Что происходит при загрузке
 
-В режиме `builtin` `Main` выполняет `AnimationPlugin plugin = new StarfieldPlugin();`: класс уже находится в classpath приложения. В режиме `url` `ExternalPluginLoader` проверяет путь и создаёт `URLClassLoader` с адресом JAR. Его родитель — `AnimationPlugin.class.getClassLoader()`. Вызов `loadClass()` находит класс по полному имени, проверка `isAssignableFrom()` подтверждает контракт, а Reflection (`getConstructor().newInstance()`) вызывает публичный конструктор без аргументов. Полученный объект передаётся тому же `AnimationEngine`. Загрузчик остаётся открытым во время анимации; `try-with-resources` закрывает его при обычном выходе, а shutdown hook — при завершении JVM через Ctrl+C.
+В режиме `builtin` `PluginSession` выполняет `AnimationPlugin plugin = new StarfieldPlugin();`: класс уже находится в classpath приложения. В режиме `url` он использует `ExternalPluginLoader`, который проверяет путь и создаёт `URLClassLoader` с адресом JAR. Его родитель — `AnimationPlugin.class.getClassLoader()`. Вызов `loadClass()` находит класс по полному имени, проверка `isAssignableFrom()` подтверждает контракт, а Reflection (`getConstructor().newInstance()`) вызывает публичный конструктор без аргументов. Полученный объект передаётся тому же `AnimationEngine`.
+
+Загрузчик остаётся открытым во время анимации. При обычном завершении runner восстанавливает курсор, затем `Main` закрывает `PluginSession` через `try-with-resources`. При Ctrl+C один shutdown hook сначала прерывает поток анимации и ждёт его завершения; если он не успеет выйти, hook сам восстановит терминал и закроет сессию. Повторное закрытие безопасно, а загрузчик закрывается после остановки анимации, насколько это позволяет завершение JVM.
 
 Интерфейс должен иметь одну идентичность для хоста и плагина: в Java тип определяется парой **имя класса + загрузивший ClassLoader**. Поэтому внешний JAR не содержит `AnimationPlugin.class`, а родительский загрузчик предоставляет его обеим сторонам. Если загрузить вторую копию интерфейса отдельным загрузчиком, одинаковое имя не спасёт от несовместимости типов и возможного `ClassCastException`.
 
