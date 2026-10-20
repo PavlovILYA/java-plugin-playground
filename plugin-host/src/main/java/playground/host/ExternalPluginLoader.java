@@ -1,5 +1,6 @@
 package playground.host;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -7,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import playground.api.AnimationPlugin;
 
-public class ExternalPluginLoader implements AutoCloseable {
+public class ExternalPluginLoader implements Closeable {
     private final URLClassLoader loader;
 
     public ExternalPluginLoader(Path jar) throws IOException {

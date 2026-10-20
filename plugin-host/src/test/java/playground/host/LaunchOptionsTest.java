@@ -34,6 +34,14 @@ class LaunchOptionsTest {
     }
 
     @Test
+    void parsesSpiDirectory() {
+        assertEquals(Path.of("plugins"), LaunchOptions.parse(new String[] {"--mode=spi"}).pluginsDir());
+        assertEquals(Path.of("other-plugins"), LaunchOptions.parse(new String[] {
+                "--mode=spi", "--plugins-dir=other-plugins"
+        }).pluginsDir());
+    }
+
+    @Test
     void rejectsMissingAndUnrelatedOptions() {
         assertEquals("Для --mode=url нужны --jar=<path> и --class=<имя>",
                 assertThrows(IllegalArgumentException.class,
@@ -44,5 +52,8 @@ class LaunchOptionsTest {
         assertEquals("Неизвестный аргумент: --unknown",
                 assertThrows(IllegalArgumentException.class,
                         () -> LaunchOptions.parse(new String[] {"--unknown"})).getMessage());
+        assertEquals("--plugins-dir используется только с --mode=spi",
+                assertThrows(IllegalArgumentException.class,
+                        () -> LaunchOptions.parse(new String[] {"--plugins-dir=plugins"})).getMessage());
     }
 }

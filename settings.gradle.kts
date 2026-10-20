@@ -1,3 +1,3 @@
 rootProject.name = "java-plugin-playground"
 
-include("plugin-api", "plugin-host", "plugin-matrix")
+include("plugin-api", "plugin-host", "plugin-matrix", "plugin-aquarium")

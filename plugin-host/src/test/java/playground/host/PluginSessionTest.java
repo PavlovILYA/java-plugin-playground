@@ -1,8 +1,14 @@
 package playground.host;
 
 import java.net.URLClassLoader;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import playground.api.AnimationPlugin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,6 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PluginSessionTest {
+    @TempDir
+    Path temporaryDirectory;
+
     @Test
     void builtinUsesOrdinaryApplicationLoader() throws Exception {
         try (PluginSession session = PluginSession.open(LaunchOptions.parse(new String[0]))) {
@@ -49,5 +58,23 @@ class PluginSessionTest {
         });
 
         assertThrows(IllegalArgumentException.class, () -> PluginSession.open(options));
+    }
+
+    @Test
+    void spiSessionSelectsAndClosesProvider() throws Exception {
+        Files.copy(Path.of(System.getProperty("matrixJar")), temporaryDirectory.resolve("matrix.jar"));
+        Files.copy(Path.of(System.getProperty("aquariumJar")), temporaryDirectory.resolve("aquarium.jar"));
+        LaunchOptions options = LaunchOptions.parse(new String[] {
+                "--mode=spi", "--plugins-dir=" + temporaryDirectory
+        });
+        PrintStream output = new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
+
+        try (PluginSession session = PluginSession.open(options, new StringReader("2\n"), output)) {
+            assertEquals("Matrix Rain", session.plugin().name());
+            ClassLoader loader = session.plugin().getClass().getClassLoader();
+            session.close();
+            session.close();
+            assertNull(loader.getResource("playground/matrix/MatrixRainPlugin.class"));
+        }
     }
 }

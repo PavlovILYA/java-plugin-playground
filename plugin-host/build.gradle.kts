@@ -14,10 +14,12 @@ application {
 
 tasks.test {
     useJUnitPlatform()
-    dependsOn(":plugin-matrix:jar")
+    dependsOn(":plugin-matrix:jar", ":plugin-aquarium:jar")
     systemProperty("matrixJar", rootProject.layout.projectDirectory.file("plugin-matrix/build/libs/plugin-matrix.jar").asFile.absolutePath)
+    systemProperty("aquariumJar", rootProject.layout.projectDirectory.file("plugin-aquarium/build/libs/plugin-aquarium.jar").asFile.absolutePath)
 }
 
 tasks.named<JavaExec>("run") {
     workingDir = rootProject.projectDir
+    standardInput = System.`in`
 }

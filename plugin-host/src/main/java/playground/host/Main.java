@@ -1,6 +1,7 @@
 package playground.host;
 
 import java.io.IOException;
+import java.util.ServiceConfigurationError;
 
 public class Main {
     public static void main(String[] args) {
@@ -13,7 +14,7 @@ public class Main {
             try (PluginSession session = PluginSession.open(options)) {
                 AnimationRunner.run(session, options.mode());
             }
-        } catch (IllegalArgumentException | IOException e) {
+        } catch (IllegalArgumentException | IOException | ServiceConfigurationError e) {
             System.err.println("Ошибка: " + e.getMessage());
             System.err.println("Используйте --help для списка аргументов.");
             System.exit(2);
